@@ -1,0 +1,90 @@
+# OpenTofu Plan — runs on every pull request to main
+# Comments the plan output back on the PR for review
+
+name: OpenTofu Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "environments/**"
+      - "modules/**"
+      - ".github/workflows/plan.yaml"
+
+env:
+  TF_VAR_proxmox_endpoint:  ${{ secrets.PROXMOX_ENDPOINT }}
+  TF_VAR_proxmox_api_token: ${{ secrets.PROXMOX_API_TOKEN }}
+  TF_VAR_proxmox_node:      ${{ secrets.PROXMOX_NODE }}
+  TF_VAR_vm_ssh_keys:       ${{ secrets.TF_VAR_vm_ssh_keys }}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [homelab]
+
+    defaults:
+      run:
+        working-directory: environments/${{ matrix.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.10.0
+
+      - name: tofu init
+        run: tofu init
+
+      - name: tofu validate
+        run: tofu validate
+
+      - name: tofu plan
+        id: plan
+        run: |
+          tofu plan -no-color -detailed-exitcode 2>&1 | tee /tmp/plan.out
+          echo "exitcode=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Post plan to PR
+        uses: actions/github-script@v7
+        if: always()
+        env:
+          PLAN_OUTPUT: ${{ steps.plan.outputs.exitcode != '' && steps.plan.outputs.exitcode != '' }}
+        with:
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('/tmp/plan.out', 'utf8');
+            const maxLen = 60000;
+            const output = planOutput.length > maxLen
+              ? planOutput.substring(0, maxLen) + '\n\n... (truncated)'
+              : planOutput;
+
+            const exitCode = ${{ steps.plan.outputs.exitcode || '2' }};
+            let status = '✅ No changes';
+            if (exitCode === '2') status = '🟡 Changes detected';
+            if (exitCode !== '0' && exitCode !== '2') status = '🔴 Plan failed';
+
+            const body = `## OpenTofu Plan — ${process.env.ENVIRONMENT || '${{ matrix.environment }}'}
+            
+            ### Status: ${status}
+            
+            \`\`\`hcl
+            ${output}
+            \`\`\``;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

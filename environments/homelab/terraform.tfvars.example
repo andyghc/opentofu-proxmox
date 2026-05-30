@@ -1,0 +1,18 @@
+# ===========================================================================
+# terraform.tfvars.example
+# ===========================================================================
+# Copy this file to terraform.tfvars and fill in your real values.
+# WARNING: terraform.tfvars is in .gitignore — never commit secrets!
+# ===========================================================================
+
+# --- Proxmox Connection ---
+proxmox_endpoint  = "https://192.168.1.10:8006/api2/json"
+proxmox_api_token = "root@pam!opentofu=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+proxmox_insecure  = true
+proxmox_node      = "pve"
+
+# --- VM Defaults ---
+vm_template_name     = "debian-12-cloudinit"
+vm_datastore         = "local-lvm"
+vm_default_username  = "ansible"
+vm_ssh_keys          = ["ssh-ed25519 AAAAC3... your-public-key-here"]
