@@ -1,0 +1,31 @@
+---
+- name: Configure DNS (nameserver)
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: |
+      nameserver 192.168.1.51
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install useful packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - htop
+      - tmux
+      - git
+      - vim
+      - ca-certificates
+      - gnupg
+    state: present
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+    autoremove: yes

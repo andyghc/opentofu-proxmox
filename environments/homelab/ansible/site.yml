@@ -1,0 +1,6 @@
+---
+- name: Base configuration for homelab VMs
+  hosts: homelab
+  become: yes
+  roles:
+    - common
