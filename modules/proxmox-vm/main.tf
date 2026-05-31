@@ -10,14 +10,27 @@ terraform {
   }
 }
 
+# Resolve the template VM ID — either explicit or looked up by name
+data "proxmox_virtual_environment_vms" "template" {
+  count = var.vm_template_id != null ? 0 : 1
+  filter {
+    name   = "name"
+    values = [var.vm_template_name]
+  }
+}
+
+locals {
+  template_vm_id = var.vm_template_id != null ? var.vm_template_id : data.proxmox_virtual_environment_vms.template[0].vms[0].vm_id
+}
+
 resource "proxmox_virtual_environment_vm" "this" {
   node_name    = var.proxmox_node
   name         = var.vm_name
   description  = var.vm_description
   tags         = var.vm_tags
-  template     = var.vm_template_id != null ? null : var.vm_template_name
+
   clone {
-    id        = var.vm_template_id
+    vm_id     = local.template_vm_id
     node_name = var.proxmox_node
     full      = var.full_clone
     retries   = 3
