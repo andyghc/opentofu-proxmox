@@ -17,7 +17,7 @@ variable "proxmox_api_token" {
 variable "proxmox_insecure" {
   description = "Skip TLS verification for Proxmox API"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "proxmox_node" {
@@ -32,19 +32,19 @@ variable "proxmox_node" {
 variable "vm_template_name" {
   description = "Default VM template to clone from"
   type        = string
-  default     = "debian-12-cloudinit"
+  default     = "Debian13.4Template"
 }
 
 variable "vm_datastore" {
   description = "Default datastore for VM disks"
   type        = string
-  default     = "local-lvm"
+  default     = "zfs1"
 }
 
 variable "vm_default_username" {
   description = "Default cloud-init username"
   type        = string
-  default     = "ansible"
+  default     = "andy"
 }
 
 variable "vm_ssh_keys" {
