@@ -29,37 +29,6 @@ provider "proxmox" {
 }
 
 # ---------------------------------------------------------------------------
-# Example VM — Ansible Controller
-# ---------------------------------------------------------------------------
-
-module "ansible_controller" {
-  source = "../../modules/proxmox-vm"
-
-  proxmox_node = var.proxmox_node
-  vm_name      = "ansible-ctrl"
-  vm_tags      = ["homelab", "ansible", "orchestrator"]
-  vm_template_name = var.vm_template_name
-
-  vm_cores  = 2
-  vm_memory = 4096
-
-  disks = [
-    {
-      datastore_id = var.vm_datastore
-      size         = 32
-    }
-  ]
-
-  vm_username   = var.vm_default_username
-  vm_ssh_keys   = var.vm_ssh_keys
-
-  # DHCP — omit IP/gateway for automatic addressing
-  cloud_init_enabled = true
-
-  qemu_agent_enabled = true
-}
-
-# ---------------------------------------------------------------------------
 # Example VM — Application Server
 # ---------------------------------------------------------------------------
 
@@ -84,7 +53,7 @@ module "app_server" {
 
   # Static IP example
   cloud_init_enabled = true
-  vm_ip_address = "192.168.1.50/24"
+  vm_ip_address = "192.168.1.160/24"
   vm_gateway    = "192.168.1.1"
   dns_servers   = ["192.168.1.1", "1.1.1.1"]
   dns_domain    = "homelab.internal"
