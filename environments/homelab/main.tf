@@ -55,7 +55,7 @@ module "app_server" {
   cloud_init_enabled = true
   vm_ip_address = "192.168.1.170/24"
   vm_gateway    = "192.168.1.1"
-  dns_servers   = ["192.168.1.1", "1.1.1.1"]
+  dns_servers   = ["192.168.1.51", "1.1.1.1"]
   dns_domain    = "homelab.internal"
 
   vm_username = var.vm_default_username
