@@ -43,7 +43,7 @@ module "app_server" {
   disks = [
     {
       datastore_id = var.vm_datastore
-      size         = 64
+      size         = 16
     }
   ]
 
