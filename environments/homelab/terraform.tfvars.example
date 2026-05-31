@@ -7,6 +7,7 @@
 
 # --- Proxmox Connection ---
 proxmox_endpoint  = "https://pve1.local:8006/api2/json"
+# Example api token format:
 proxmox_api_token = "root@pam!HermesTF=8a42e476-daf8-4102-ab67-b65dac5ab276"
 proxmox_insecure  = true
 proxmox_node      = "pve1"
