@@ -32,7 +32,7 @@ variable "proxmox_node" {
 variable "vm_template_name" {
   description = "Default VM template to clone from"
   type        = string
-  default     = "Debian13.4Template"
+  default     = "Debian13Template"
 }
 
 variable "vm_datastore" {
