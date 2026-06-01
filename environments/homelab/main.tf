@@ -59,3 +59,38 @@ module "app_server" {
 
   qemu_agent_enabled = true
 }
+
+# ---------------------------------------------------------------------------
+# WebCalc VM — Docker container host for the web calculator
+# ---------------------------------------------------------------------------
+
+module "webcalc_vm" {
+  source = "../../modules/proxmox-vm"
+
+  proxmox_node = var.proxmox_node
+  vm_name      = "webcalc-vm"
+  vm_tags      = ["homelab", "webcalc", "docker"]
+
+  vm_template_name = var.vm_template_name
+
+  vm_cores  = 2
+  vm_memory = 2048
+
+  disks = [
+    {
+      datastore_id = var.vm_datastore
+      size         = 16
+    }
+  ]
+
+  cloud_init_enabled = true
+  vm_ip_address = "192.168.1.171/24"
+  vm_gateway    = "192.168.1.1"
+  dns_servers   = ["192.168.1.51", "1.1.1.1"]
+  dns_domain    = "homelab.internal"
+
+  vm_username = var.vm_default_username
+  vm_ssh_keys = var.vm_ssh_keys
+
+  qemu_agent_enabled = true
+}

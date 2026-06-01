@@ -1,0 +1,17 @@
+---
+- name: Pull webcalc image from GHCR
+  community.docker.docker_image:
+    name: ghcr.io/andyghc/webcalc
+    tag: latest
+    source: pull
+    force_source: "{{ webcalc_force_pull | default(true) }}"
+
+- name: Ensure webcalc container is running
+  community.docker.docker_container:
+    name: webcalc
+    image: ghcr.io/andyghc/webcalc:latest
+    state: started
+    restart_policy: always
+    ports:
+      - "8080:80"
+    pull: "{{ webcalc_force_pull | default(true) }}"
