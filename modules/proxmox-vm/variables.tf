@@ -50,6 +50,36 @@ variable "stop_on_destroy" {
   default     = true
 }
 
+variable "vm_bios" {
+  description = "BIOS implementation (seabios or ovmf)"
+  type        = string
+  default     = "ovmf"
+}
+
+variable "efi_disk_datastore_id" {
+  description = "Datastore ID for the EFI disk (only used when bios=ovmf)"
+  type        = string
+  default     = "zfs1"
+}
+
+variable "efi_disk_file_format" {
+  description = "File format for the EFI disk (raw or qcow2)"
+  type        = string
+  default     = "raw"
+}
+
+variable "efi_disk_type" {
+  description = "EFI disk type (2m or 4m)"
+  type        = string
+  default     = "4m"
+}
+
+variable "efi_disk_pre_enrolled_keys" {
+  description = "Pre-enroll Microsoft and Open Source Secure Boot keys"
+  type        = bool
+  default     = true
+}
+
 variable "vm_cores" {
   description = "Number of CPU cores"
   type        = number
