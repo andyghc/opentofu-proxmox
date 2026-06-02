@@ -47,8 +47,8 @@ jobs:
       - name: tofu plan
         id: plan
         run: |
-          tofu plan -no-color -detailed-exitcode 2>&1 | tee /tmp/plan.out
-          echo "exitcode=$?" >> $GITHUB_OUTPUT
+          tofu plan -no-color -detailed-exitcode 2>&1 | tee /tmp/plan.out || true
+          echo "exitcode=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: Post plan to PR

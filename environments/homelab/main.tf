@@ -9,6 +9,10 @@ terraform {
       version = "~> 0.70"
     }
   }
+
+  backend "local" {
+    path = "/home/andy/.opentofu-state/homelab/terraform.tfstate"
+  }
 }
 
 # ---------------------------------------------------------------------------
