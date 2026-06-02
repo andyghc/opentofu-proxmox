@@ -38,6 +38,7 @@ resource "proxmox_virtual_environment_vm" "this" {
   started      = var.vm_start
   on_boot      = var.vm_start
   stop_on_destroy = var.stop_on_destroy
+  bios         = var.vm_bios
 
   cpu {
     cores       = var.vm_cores
@@ -102,6 +103,16 @@ resource "proxmox_virtual_environment_vm" "this" {
       }
 
       upgrade = var.upgrade_packages
+    }
+  }
+
+  dynamic "efi_disk" {
+    for_each = var.vm_bios == "ovmf" ? [1] : []
+    content {
+      datastore_id      = var.efi_disk_datastore_id
+      file_format       = var.efi_disk_file_format
+      type              = var.efi_disk_type
+      pre_enrolled_keys = var.efi_disk_pre_enrolled_keys
     }
   }
 
