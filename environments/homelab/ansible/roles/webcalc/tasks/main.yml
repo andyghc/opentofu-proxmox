@@ -1,17 +1,131 @@
 ---
+#
+# WebCalc role — deploys the calculator behind Caddy reverse proxy
+# and registers DNS with Pi-hole.
+#
+# Only runs on webcalc-vm (Caddy + webcalc containers).
+# Pi-hole DNS registration runs from the Ansible control node.
+#
+
+# ---------------------------------------------------------------------------
+# Docker network (shared between Caddy and webcalc)
+# ---------------------------------------------------------------------------
+
+- name: Create Docker network for webcalc
+  community.docker.docker_network:
+    name: webcalc-net
+    state: present
+  when: inventory_hostname == 'webcalc-vm'
+
+# ---------------------------------------------------------------------------
+# Caddy reverse proxy
+# ---------------------------------------------------------------------------
+
+- name: Ensure Caddy config directory exists
+  ansible.builtin.file:
+    path: /opt/caddy
+    state: directory
+    mode: '0755'
+  when: inventory_hostname == 'webcalc-vm'
+
+- name: Write Caddyfile
+  ansible.builtin.copy:
+    dest: /opt/caddy/Caddyfile
+    content: |
+      webcalc.homelab.internal:80 {
+          reverse_proxy webcalc:80
+      }
+    mode: '0644'
+  when: inventory_hostname == 'webcalc-vm'
+
+- name: Pull Caddy image
+  community.docker.docker_image:
+    name: caddy
+    tag: alpine
+    source: pull
+    force_source: "{{ webcalc_force_pull | default(true) }}"
+  when: inventory_hostname == 'webcalc-vm'
+
+- name: Ensure Caddy container is running
+  community.docker.docker_container:
+    name: caddy
+    image: caddy:alpine
+    state: started
+    restart_policy: always
+    ports:
+      - "80:80"
+    networks:
+      - name: webcalc-net
+    volumes:
+      - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+  when: inventory_hostname == 'webcalc-vm'
+
+# ---------------------------------------------------------------------------
+# WebCalc container (internal network, behind Caddy)
+# ---------------------------------------------------------------------------
+
+- name: Remove legacy webcalc container (migration from host port)
+  community.docker.docker_container:
+    name: webcalc
+    state: absent
+  when: inventory_hostname == 'webcalc-vm'
+
 - name: Pull webcalc image from GHCR
   community.docker.docker_image:
     name: ghcr.io/andyghc/webcalc
     tag: latest
     source: pull
     force_source: "{{ webcalc_force_pull | default(true) }}"
+  when: inventory_hostname == 'webcalc-vm'
 
-- name: Ensure webcalc container is running
+- name: Ensure webcalc container is running (internal network)
   community.docker.docker_container:
     name: webcalc
     image: ghcr.io/andyghc/webcalc:latest
     state: started
     restart_policy: always
-    ports:
-      - "8080:80"
+    networks:
+      - name: webcalc-net
     pull: "{{ webcalc_force_pull | default(true) }}"
+  when: inventory_hostname == 'webcalc-vm'
+
+# ---------------------------------------------------------------------------
+# Pi-hole DNS registration — runs from the Ansible control node
+# ---------------------------------------------------------------------------
+
+- name: Register webcalc DNS entry in Pi-hole
+  delegate_to: localhost
+  become: false
+  vars:
+    pihole_host: "192.168.1.51"
+    pihole_port: "8085"
+    pihole_compose: "/docker/pihole/docker-compose.yml"
+    dns_entry: "192.168.1.171 webcalc.homelab.internal"
+  block:
+    - name: Get Pi-hole API password from compose file
+      ansible.builtin.shell: |
+        ssh -o StrictHostKeyChecking=accept-new andy@{{ pihole_host }} \
+          "grep -oP \"FTLCONF_webserver_api_password: '\\\\K[^']+\" {{ pihole_compose }}"
+      register: pihole_pw
+      no_log: true
+
+    - name: Authenticate and add DNS entry
+      ansible.builtin.shell: |
+        set -euo pipefail
+        PASSWORD="{{ pihole_pw.stdout }}"
+        API="http://{{ pihole_host }}:{{ pihole_port }}/api"
+
+        SESSION=$(curl -s -X POST "$API/auth" -H "Content-Type: application/json" -d "{\"password\": \"$PASSWORD\"}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('session',{}).get('sid',''))")
+        if [ -z "$SESSION" ]; then echo "FAILED: auth"; exit 1; fi
+
+        CURRENT=$(curl -s "$API/config" -H "X-FTL-SID: $SESSION")
+        if echo "$CURRENT" | python3 -c "import sys,json; hosts=json.load(sys.stdin)['config']['dns']['hosts']; sys.exit(0 if '{{ dns_entry }}' in hosts else 1)"; then
+          echo "DNS: entry already exists"
+        else
+          UPDATED=$(echo "$CURRENT" | python3 -c "import sys,json; c=json.load(sys.stdin)['config']['dns']['hosts']; c.append('{{ dns_entry }}'); import json as j; print(j.dumps({'config':{'dns':{'hosts':c}}}))")
+          curl -s -X PATCH "$API/config" -H "Content-Type: application/json" -H "X-FTL-SID: $SESSION" -d "$UPDATED" > /dev/null
+          echo "DNS: entry added"
+        fi
+      register: dns_result
+      changed_when: "'added' in dns_result.stdout"
+      no_log: true
