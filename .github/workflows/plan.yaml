@@ -65,10 +65,10 @@ jobs:
               ? planOutput.substring(0, maxLen) + '\n\n... (truncated)'
               : planOutput;
 
-            const exitCode = ${{ steps.plan.outputs.exitcode || '2' }};
+            const exitCode = Number(${{ steps.plan.outputs.exitcode || '2' }});
             let status = '✅ No changes';
-            if (exitCode === '2') status = '🟡 Changes detected';
-            if (exitCode !== '0' && exitCode !== '2') status = '🔴 Plan failed';
+            if (exitCode === 2) status = '🟡 Changes detected';
+            if (exitCode !== 0 && exitCode !== 2) status = '🔴 Plan failed';
 
             const body = `## OpenTofu Plan — ${process.env.ENVIRONMENT || '${{ matrix.environment }}'}
             
