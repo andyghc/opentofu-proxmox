@@ -3,11 +3,6 @@ all:
   children:
     homelab:
       hosts:
-        app-server:
-          ansible_host: 192.168.1.170
-          ansible_user: andy
-          ansible_python_interpreter: /usr/bin/python3.13
-
         webcalc-vm:
           ansible_host: 192.168.1.171
           ansible_user: andy

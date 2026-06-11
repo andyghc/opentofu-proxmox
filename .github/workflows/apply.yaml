@@ -54,7 +54,6 @@ jobs:
 
       - name: Run Ansible playbook
         run: | 
-          ssh-keygen -f ~/.ssh/known_hosts -R "192.168.1.170" 2>/dev/null || true
           ssh-keygen -f ~/.ssh/known_hosts -R "192.168.1.171" 2>/dev/null || true
           ansible-playbook site.yml
         working-directory: environments/homelab/ansible/
